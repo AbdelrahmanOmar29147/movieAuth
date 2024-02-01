@@ -10,9 +10,4 @@ class AuthServiceAppTest {
 	void contextLoads() {
 	}
 
-	@Test
-	public void applicationContextTest() {
-		AuthServiceApp.main(new String[] {});
-	}
-
 }
