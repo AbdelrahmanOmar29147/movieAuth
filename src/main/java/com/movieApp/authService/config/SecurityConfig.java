@@ -37,7 +37,7 @@ public class SecurityConfig {
                         auth -> auth
                                 .requestMatchers("/api/v1/auth/validate")
                                 .authenticated()
-                                .requestMatchers("/api/v1/auth/**")
+                                .requestMatchers("/api/v1/auth/**", "https://www.google.com/recaptcha/api/siteverify?**")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
