@@ -1,8 +1,10 @@
-package com.movieApp.authService.auth;
+package com.movieApp.authService.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.movieApp.authService.auth.AuthenticationRequest;
+import com.movieApp.authService.auth.RecaptchaResponse;
+import com.movieApp.authService.auth.RegisterRequest;
 import com.movieApp.authService.config.*;
 import com.movieApp.authService.user.Role;
 import com.movieApp.authService.user.User;
@@ -13,12 +15,12 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -26,14 +28,15 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Optional;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
 @ContextConfiguration(classes = {WireMockConfig.class})
+@TestPropertySource(locations= "classpath:application-test.properties")
 class AuthenticationControllerTest {
 
     @Autowired
@@ -52,14 +55,8 @@ class AuthenticationControllerTest {
     @Autowired
     ObjectMapper mapper;
 
-    @Autowired
-    CaptchaConfig captchaConfig;
-
     @MockBean
     UserRepository userRepository;
-
-    @MockBean
-    CaptchaService captchaService;
 
     @MockBean
     AuthenticationManager authenticationManager;
@@ -91,8 +88,15 @@ class AuthenticationControllerTest {
                 .build();
 
         Mockito.when(userRepository.save(user)).thenReturn(user);
-        Mockito.when(captchaService.verifyChaptcha(request.getToken())).thenReturn(response);
-        System.out.println(wireMockServer.isHttpEnabled());
+        this.wireMockServer.stubFor(
+                post("/google?secret=RECAPTCHASECRET&response=RECAPTCHARESPONSE")
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                                        .withBody(mapper.writeValueAsString(response))
+                        )
+        );
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/v1/auth/register")
@@ -109,10 +113,18 @@ class AuthenticationControllerTest {
                 .builder()
                 .email("harry@gmail.com")
                 .password("H123456")
-                .token("")
+                .token("RECAPTCHARESPONSE")
                 .build();
 
-        Mockito.when(captchaService.verifyChaptcha(request.getToken())).thenReturn(response);
+        this.wireMockServer.stubFor(
+                post("/google?secret=RECAPTCHASECRET&response=RECAPTCHARESPONSE")
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(200)
+                                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                                        .withBody(mapper.writeValueAsString(response))
+                        )
+        );
         Mockito.when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.ofNullable(user));
         Mockito.when(authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()))

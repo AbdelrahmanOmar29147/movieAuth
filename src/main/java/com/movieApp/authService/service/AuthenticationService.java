@@ -1,48 +1,36 @@
-package com.movieApp.authService.auth;
+package com.movieApp.authService.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.movieApp.authService.config.CaptchaConfig;
-import com.movieApp.authService.config.CaptchaService;
-import com.movieApp.authService.config.JwtService;
+import com.movieApp.authService.auth.AuthenticationRequestDTO;
+import com.movieApp.authService.auth.AuthenticationResponseDTO;
+import com.movieApp.authService.auth.RegisterRequestDTO;
+import com.movieApp.authService.config.CaptchaUtil;
+import com.movieApp.authService.config.JwtUtil;
 import com.movieApp.authService.user.Role;
 import com.movieApp.authService.user.User;
 import com.movieApp.authService.user.UserRepository;
-import com.sun.jdi.request.InvalidRequestStateException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository repository;
-    private final CaptchaService captchaService;
+    private final CaptchaUtil captchaUtil;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final ObjectMapper mapper;
 
 
-    public AuthenticationResponse register(RegisterRequest request) throws Exception {
-        System.out.println(captchaService.verifyChaptcha(request.getToken()).isSuccess());
+    public AuthenticationResponseDTO register(RegisterRequestDTO request) throws Exception {
         try{
-            if(captchaService.verifyChaptcha(request.getToken()).isSuccess()){
+            if(captchaUtil.verifyCaptcha(request.getToken()).isSuccess()){
                 var user = User.builder()
                         .firstname(request.getFirstname())
                         .lastname(request.getLastname())
@@ -51,8 +39,8 @@ public class AuthenticationService {
                         .role(Role.USER)
                         .build();
                 repository.save(user);
-                var jwtToken = jwtService.generateToken(user);
-                return AuthenticationResponse.builder().Token(jwtToken).build();
+                var jwtToken = jwtUtil.generateToken(user);
+                return AuthenticationResponseDTO.builder().Token(jwtToken).build();
             }
         }
         catch(HttpClientErrorException e) {
@@ -61,16 +49,15 @@ public class AuthenticationService {
         return null;
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) throws Exception {
+    public AuthenticationResponseDTO authenticate(AuthenticationRequestDTO request) throws Exception {
         try{
-            if(captchaService.verifyChaptcha(request.getToken()).isSuccess()) {
+            if(captchaUtil.verifyCaptcha(request.getToken()).isSuccess()) {
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
                 );
                 var user = repository.findByEmail(request.getEmail()).orElseThrow();
-                var jwtToken = jwtService.generateToken(user);
-                System.out.println(jwtToken);
-                return AuthenticationResponse.builder().Token(jwtToken).build();
+                var jwtToken = jwtUtil.generateToken(user);
+                return AuthenticationResponseDTO.builder().Token(jwtToken).build();
             }
         }
         catch(HttpClientErrorException e) {
@@ -81,7 +68,7 @@ public class AuthenticationService {
 
     public UserDetails validate(HashMap<String, String> headers) {
         String token = headers.get("authorization").substring(7);
-        String email =  jwtService.extractUsername(token);
+        String email =  jwtUtil.extractUsername(token);
         return repository.findByEmail(email).orElseThrow();
     }
 }

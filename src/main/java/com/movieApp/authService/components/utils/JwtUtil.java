@@ -1,4 +1,4 @@
-package com.movieApp.authService.config;
+package com.movieApp.authService.components.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
-public class JwtService {
+public class JwtUtil {
 
     private static final String SECRET_KEY = "aae8679840969f0c0d60ca2e72ef98db3aeb2e66353a6ae73e2df1852bdfa8f8";
 

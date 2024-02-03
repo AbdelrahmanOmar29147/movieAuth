@@ -1,4 +1,4 @@
-package com.movieApp.authService.auth;
+package com.movieApp.authService.auth.DTO;
 
 import lombok.*;
 
@@ -9,7 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-public class RecaptchaResponse {
+public class RecaptchaResponseDTO {
 
     private boolean success;
 

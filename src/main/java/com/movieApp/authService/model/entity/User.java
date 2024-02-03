@@ -1,5 +1,6 @@
-package com.movieApp.authService.user;
+package com.movieApp.authService.model.entity;
 
+import com.movieApp.authService.components.utils.Role;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;

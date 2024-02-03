@@ -1,11 +1,11 @@
-package com.movieApp.authService.auth;
+package com.movieApp.authService.auth.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class RecaptchaRequestDto {
+public class RecaptchaRequestDTO {
     String secret;
     String response;
 }

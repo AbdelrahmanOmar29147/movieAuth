@@ -1,5 +1,6 @@
-package com.movieApp.authService.config;
+package com.movieApp.authService.components.filter;
 
+import com.movieApp.authService.config.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +21,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private final JwtUtil jwtService;
     private final UserDetailsService userDetailsService;
 
     @Override

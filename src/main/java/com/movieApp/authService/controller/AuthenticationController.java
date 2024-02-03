@@ -1,5 +1,9 @@
-package com.movieApp.authService.auth;
+package com.movieApp.authService.controller;
 
+import com.movieApp.authService.auth.AuthenticationRequest;
+import com.movieApp.authService.auth.AuthenticationResponse;
+import com.movieApp.authService.auth.AuthenticationService;
+import com.movieApp.authService.auth.RegisterRequest;
 import com.movieApp.authService.config.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

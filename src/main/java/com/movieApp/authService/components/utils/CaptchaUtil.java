@@ -1,7 +1,8 @@
-package com.movieApp.authService.config;
+package com.movieApp.authService.components.utils;
 
-import com.movieApp.authService.auth.RecaptchaRequestDto;
-import com.movieApp.authService.auth.RecaptchaResponse;
+import com.movieApp.authService.auth.RecaptchaRequestDTO;
+import com.movieApp.authService.auth.RecaptchaResponseDTO;
+import com.movieApp.authService.config.CaptchaConfig;
 import com.sun.jdi.request.InvalidRequestStateException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
@@ -14,30 +15,26 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
-public class CaptchaService {
+public class CaptchaUtil {
     private final CaptchaConfig captchaConfig;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public RecaptchaResponse verifyChaptcha(String tokenResponse)  {
-        ResponseEntity<RecaptchaResponse> responseEntity = null;
+    public RecaptchaResponseDTO verifyCaptcha(String tokenResponse)  {
+        ResponseEntity<RecaptchaResponseDTO> responseEntity = null;
 
-        RecaptchaRequestDto requestDto = new RecaptchaRequestDto(captchaConfig.getSecret(), tokenResponse);
+        RecaptchaRequestDTO requestDto = new RecaptchaRequestDTO(captchaConfig.getSecret(), tokenResponse);
         HttpEntity<String> httpEntity = new HttpEntity<>(new HttpHeaders());
 
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(captchaConfig.getUrl())
                 .queryParam("secret", requestDto.getSecret())
                 .queryParam("response", requestDto.getResponse());
-        System.out.println(uriBuilder.buildAndExpand().toUri());
         try {
             responseEntity = restTemplate.exchange(
                     uriBuilder.buildAndExpand().toUri(),
                     HttpMethod.POST,
                     httpEntity,
-                    RecaptchaResponse.class
+                    RecaptchaResponseDTO.class
             );
-            System.out.println(responseEntity.getBody().getAction());
-            System.out.println(responseEntity.getStatusCode());
-
         }  catch (Exception e) {
             throw new InvalidRequestStateException(e.getMessage());
         }
