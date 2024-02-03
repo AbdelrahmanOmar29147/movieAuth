@@ -1,14 +1,12 @@
 package com.movieApp.authService.controller;
 
-import com.movieApp.authService.auth.AuthenticationRequest;
-import com.movieApp.authService.auth.AuthenticationResponse;
-import com.movieApp.authService.auth.AuthenticationService;
-import com.movieApp.authService.auth.RegisterRequest;
-import com.movieApp.authService.config.JwtService;
+import com.movieApp.authService.model.DTO.AuthenticationRequestDTO;
+import com.movieApp.authService.model.DTO.AuthenticationResponseDTO;
+import com.movieApp.authService.service.AuthenticationService;
+import com.movieApp.authService.model.DTO.RegisterRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,16 +19,16 @@ public class AuthenticationController {
 
     @CrossOrigin
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(
-            @RequestBody RegisterRequest request
+    public ResponseEntity<AuthenticationResponseDTO> register(
+            @RequestBody RegisterRequestDTO request
     ) throws Exception {
         return ResponseEntity.ok(service.register(request));
     }
 
     @CrossOrigin
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(
-            @RequestBody AuthenticationRequest request
+    public ResponseEntity<AuthenticationResponseDTO> authenticate(
+            @RequestBody AuthenticationRequestDTO request
     ) throws Exception {
         return ResponseEntity.ok(service.authenticate(request));
     }

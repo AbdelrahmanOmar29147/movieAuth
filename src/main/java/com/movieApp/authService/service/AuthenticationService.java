@@ -1,14 +1,15 @@
 package com.movieApp.authService.service;
 
-import com.movieApp.authService.auth.AuthenticationRequestDTO;
-import com.movieApp.authService.auth.AuthenticationResponseDTO;
-import com.movieApp.authService.auth.RegisterRequestDTO;
-import com.movieApp.authService.config.CaptchaUtil;
-import com.movieApp.authService.config.JwtUtil;
-import com.movieApp.authService.user.Role;
-import com.movieApp.authService.user.User;
-import com.movieApp.authService.user.UserRepository;
+import com.movieApp.authService.model.DTO.AuthenticationRequestDTO;
+import com.movieApp.authService.model.DTO.AuthenticationResponseDTO;
+import com.movieApp.authService.model.DTO.RegisterRequestDTO;
+import com.movieApp.authService.components.utils.CaptchaUtil;
+import com.movieApp.authService.components.utils.JwtUtil;
+import com.movieApp.authService.components.utils.Role;
+import com.movieApp.authService.model.entity.User;
+import com.movieApp.authService.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,8 +29,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
 
-    public AuthenticationResponseDTO register(RegisterRequestDTO request) throws Exception {
-        try{
+    public AuthenticationResponseDTO register(RegisterRequestDTO request) throws AccessDeniedException {
             if(captchaUtil.verifyCaptcha(request.getToken()).isSuccess()){
                 var user = User.builder()
                         .firstname(request.getFirstname())
@@ -42,15 +42,12 @@ public class AuthenticationService {
                 var jwtToken = jwtUtil.generateToken(user);
                 return AuthenticationResponseDTO.builder().Token(jwtToken).build();
             }
+        else {
+            throw new AccessDeniedException("Access Denied");
         }
-        catch(HttpClientErrorException e) {
-            throw new Exception(e.getMessage());
-        }
-        return null;
     }
 
-    public AuthenticationResponseDTO authenticate(AuthenticationRequestDTO request) throws Exception {
-        try{
+    public AuthenticationResponseDTO authenticate(AuthenticationRequestDTO request) throws AccessDeniedException {
             if(captchaUtil.verifyCaptcha(request.getToken()).isSuccess()) {
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -59,11 +56,10 @@ public class AuthenticationService {
                 var jwtToken = jwtUtil.generateToken(user);
                 return AuthenticationResponseDTO.builder().Token(jwtToken).build();
             }
-        }
-        catch(HttpClientErrorException e) {
-            throw new Exception(e.getMessage());
-        }
-        return null;
+            else{
+                throw new AccessDeniedException("Access Denied");
+            }
+
     }
 
     public UserDetails validate(HashMap<String, String> headers) {

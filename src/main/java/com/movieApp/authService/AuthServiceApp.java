@@ -1,9 +1,11 @@
-  package com.movieApp.authService;
+package com.movieApp.authService;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
+@EnableFeignClients
 public class AuthServiceApp {
 
 	public static void main(String[] args) {

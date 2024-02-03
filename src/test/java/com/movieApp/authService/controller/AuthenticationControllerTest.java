@@ -1,14 +1,15 @@
 package com.movieApp.authService.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.movieApp.authService.auth.AuthenticationRequest;
-import com.movieApp.authService.auth.RecaptchaResponse;
-import com.movieApp.authService.auth.RegisterRequest;
+import com.movieApp.authService.model.DTO.AuthenticationRequestDTO;
+import com.movieApp.authService.model.DTO.RecaptchaResponseDTO;
+import com.movieApp.authService.model.DTO.RegisterRequestDTO;
+import com.movieApp.authService.components.filter.JwtAuthenticationFilter;
 import com.movieApp.authService.config.*;
-import com.movieApp.authService.user.Role;
-import com.movieApp.authService.user.User;
-import com.movieApp.authService.user.UserRepository;
+import com.movieApp.authService.model.entity.User;
+import com.movieApp.authService.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,11 +27,15 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,15 +44,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(locations= "classpath:application-test.properties")
 class AuthenticationControllerTest {
 
+    private MockMvc mockMvc;
+    private User user;
+    private RecaptchaResponseDTO recaptchaResponse;
+
     @Autowired
     WebApplicationContext webApplicationContext;
 
     @Autowired
     private WireMockServer wireMockServer;
-
-    private MockMvc mockMvc;
-    private User user;
-    private RecaptchaResponse response;
 
     @Autowired
     JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -61,42 +66,36 @@ class AuthenticationControllerTest {
     @MockBean
     AuthenticationManager authenticationManager;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(jwtAuthenticationFilter).build();
-        user = User.builder()
-                .firstname("Harry")
-                .lastname("Potter")
-                .email("harry@gmail.com")
-                .password("H123456")
-                .role(Role.USER)
-                .build();
-        response = RecaptchaResponse.builder()
-                .success(true)
-                .action("duck")
-                .build();
+    private File getFileFromResource(String filename)  {
+        return new File(
+                Objects.requireNonNull(this.getClass().getClassLoader().getResource(filename)).getFile()
+        );
     }
 
-    @Test
-    void register_success() throws Exception {
-        RegisterRequest request = RegisterRequest.builder()
-                .firstname("Harry")
-                .lastname("Potter")
-                .email("harry@gmail.com")
-                .token("RECAPTCHARESPONSE")
-                .password("H123456")
-                .build();
-
-        Mockito.when(userRepository.save(user)).thenReturn(user);
+    private void createGoogleRecaptchaWireMock(String token) throws JsonProcessingException {
         this.wireMockServer.stubFor(
-                post("/google?secret=RECAPTCHASECRET&response=RECAPTCHARESPONSE")
+                post("/google?secret=RECAPTCHASECRET&response=" + token)
                         .willReturn(
                                 aResponse()
                                         .withStatus(200)
                                         .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                                        .withBody(mapper.writeValueAsString(response))
+                                        .withBody(mapper.writeValueAsString(recaptchaResponse))
                         )
         );
+    }
+
+    @BeforeEach
+    void setUp() throws IOException {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(jwtAuthenticationFilter).build();
+        user = mapper.readValue(getFileFromResource("user.json"), User.class);
+        recaptchaResponse = new RecaptchaResponseDTO();
+    }
+
+    @Test
+    void register_success() throws Exception {
+        RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
+        recaptchaResponse.setSuccess(true);
+        createGoogleRecaptchaWireMock(request.getToken());
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/v1/auth/register")
@@ -109,22 +108,11 @@ class AuthenticationControllerTest {
 
     @Test
     void authenticate_success() throws Exception {
-        AuthenticationRequest request = AuthenticationRequest
-                .builder()
-                .email("harry@gmail.com")
-                .password("H123456")
-                .token("RECAPTCHARESPONSE")
-                .build();
+        AuthenticationRequestDTO request = mapper
+                .readValue(getFileFromResource("authenticationRequestDTO.json"), AuthenticationRequestDTO.class);
+        recaptchaResponse.setSuccess(true);
+        createGoogleRecaptchaWireMock(request.getToken());
 
-        this.wireMockServer.stubFor(
-                post("/google?secret=RECAPTCHASECRET&response=RECAPTCHARESPONSE")
-                        .willReturn(
-                                aResponse()
-                                        .withStatus(200)
-                                        .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                                        .withBody(mapper.writeValueAsString(response))
-                        )
-        );
         Mockito.when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.ofNullable(user));
         Mockito.when(authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()))
@@ -139,5 +127,43 @@ class AuthenticationControllerTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", notNullValue()));
+    }
+
+    @Test
+    void authenticateRecaptcha_fail() throws Exception {
+        AuthenticationRequestDTO request = mapper
+                .readValue(getFileFromResource("authenticationRequestDTO.json"), AuthenticationRequestDTO.class);
+        recaptchaResponse.setSuccess(false);
+        createGoogleRecaptchaWireMock(request.getToken());
+
+        assertThrows(Exception.class,
+                ()->{
+                    mockMvc.perform(MockMvcRequestBuilders
+                                    .post("/api/v1/auth/authenticate")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .accept(MediaType.APPLICATION_JSON)
+                                    .content(this.mapper.writeValueAsString(request))
+                            )
+                            .andExpect(status().is4xxClientError())
+                            .andExpect(jsonPath("$").doesNotExist());
+                });
+    }
+
+    @Test
+    void registerRecaptcha_fail() throws Exception {
+        RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
+        recaptchaResponse.setSuccess(false);
+        createGoogleRecaptchaWireMock(request.getToken());
+
+        assertThrows(Exception.class,
+                ()->{
+                    mockMvc.perform(MockMvcRequestBuilders
+                                    .post("/api/v1/auth/register")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .accept(MediaType.APPLICATION_JSON)
+                                    .content(this.mapper.writeValueAsString(request)))
+                            .andExpect(status().is4xxClientError())
+                            .andExpect(jsonPath("$").doesNotExist());
+                });
     }
 }

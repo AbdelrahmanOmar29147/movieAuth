@@ -1,4 +1,4 @@
-package com.movieApp.authService.auth.DTO;
+package com.movieApp.authService.model.DTO;
 
 import lombok.*;
 

@@ -1,5 +1,6 @@
-package com.movieApp.authService.user;
+package com.movieApp.authService.repository;
 
+import com.movieApp.authService.model.entity.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

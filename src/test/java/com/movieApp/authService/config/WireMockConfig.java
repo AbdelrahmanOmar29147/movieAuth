@@ -9,7 +9,7 @@ public class WireMockConfig {
 
     @Bean
     public WireMockServer wireMockServer(){
-        WireMockServer server= new WireMockServer();
+        WireMockServer server= new WireMockServer(9090);
         server.start();
         return server;
     }
