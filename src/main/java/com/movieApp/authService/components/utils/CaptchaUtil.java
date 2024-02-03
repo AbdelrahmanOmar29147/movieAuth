@@ -6,17 +6,9 @@ import com.movieApp.authService.model.DTO.RecaptchaResponseDTO;
 import com.movieApp.authService.config.CaptchaConfig;
 import com.sun.jdi.request.InvalidRequestStateException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor

@@ -72,12 +72,12 @@ class AuthenticationControllerTest {
         );
     }
 
-    private void createGoogleRecaptchaWireMock(String token) throws JsonProcessingException {
+    private void createGoogleRecaptchaWireMock(String token, Integer status) throws JsonProcessingException {
         this.wireMockServer.stubFor(
                 post("/google?secret=RECAPTCHASECRET&response=" + token)
                         .willReturn(
                                 aResponse()
-                                        .withStatus(200)
+                                        .withStatus(status)
                                         .withHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                                         .withBody(mapper.writeValueAsString(recaptchaResponse))
                         )
@@ -95,7 +95,7 @@ class AuthenticationControllerTest {
     void register_success() throws Exception {
         RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
         recaptchaResponse.setSuccess(true);
-        createGoogleRecaptchaWireMock(request.getToken());
+        createGoogleRecaptchaWireMock(request.getToken(), 200);
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/v1/auth/register")
@@ -111,7 +111,7 @@ class AuthenticationControllerTest {
         AuthenticationRequestDTO request = mapper
                 .readValue(getFileFromResource("authenticationRequestDTO.json"), AuthenticationRequestDTO.class);
         recaptchaResponse.setSuccess(true);
-        createGoogleRecaptchaWireMock(request.getToken());
+        createGoogleRecaptchaWireMock(request.getToken(), 200);
 
         Mockito.when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.ofNullable(user));
         Mockito.when(authenticationManager.authenticate(
@@ -134,7 +134,7 @@ class AuthenticationControllerTest {
         AuthenticationRequestDTO request = mapper
                 .readValue(getFileFromResource("authenticationRequestDTO.json"), AuthenticationRequestDTO.class);
         recaptchaResponse.setSuccess(false);
-        createGoogleRecaptchaWireMock(request.getToken());
+        createGoogleRecaptchaWireMock(request.getToken(), 200);
 
         assertThrows(Exception.class,
                 ()->{
@@ -153,7 +153,26 @@ class AuthenticationControllerTest {
     void registerRecaptcha_fail() throws Exception {
         RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
         recaptchaResponse.setSuccess(false);
-        createGoogleRecaptchaWireMock(request.getToken());
+        createGoogleRecaptchaWireMock(request.getToken(), 200);
+
+        assertThrows(Exception.class,
+                ()->{
+                    mockMvc.perform(MockMvcRequestBuilders
+                                    .post("/api/v1/auth/register")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .accept(MediaType.APPLICATION_JSON)
+                                    .content(this.mapper.writeValueAsString(request)))
+                            .andExpect(status().is4xxClientError())
+                            .andExpect(jsonPath("$").doesNotExist());
+                });
+    }
+
+    @Test
+    void registerRecaptcha403_fail() throws Exception {
+        RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
+        recaptchaResponse.setSuccess(false);
+        createGoogleRecaptchaWireMock(request.getToken(), 403);
+
 
         assertThrows(Exception.class,
                 ()->{

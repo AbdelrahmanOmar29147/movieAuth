@@ -5,6 +5,7 @@ import com.movieApp.authService.components.filter.JwtAuthenticationFilter;
 import com.movieApp.authService.components.utils.JwtUtil;
 import com.movieApp.authService.model.entity.User;
 import com.movieApp.authService.repository.UserRepository;
+import org.apache.el.parser.Token;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AuthenticationSecuritySuccessTest {
     private MockMvc mockMvc;
     private User user;
+    private String TOKEN;
 
     @Autowired
     WebApplicationContext webApplicationContext;
@@ -50,21 +52,21 @@ public class AuthenticationSecuritySuccessTest {
     @MockBean
     UserRepository userRepository;
 
-    private File getFileFromResource(String filename)  {
+    private File getFileFromResource()  {
         return new File(
-                Objects.requireNonNull(this.getClass().getClassLoader().getResource(filename)).getFile()
+                Objects.requireNonNull(this.getClass().getClassLoader().getResource("user.json")).getFile()
         );
     }
 
     @BeforeEach
     void setUp() throws IOException {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(jwtAuthenticationFilter).build();
-        user = mapper.readValue(getFileFromResource("user.json"), User.class);
+        user = mapper.readValue(getFileFromResource(), User.class);
+        TOKEN = "IAMAVERYREALTOKEN";
     }
 
     @Test
     void validate_success() throws Exception {
-        String TOKEN = "IAMAVERYREALTOKEN";
 
         Mockito.when(jwtUtil.extractUsername(TOKEN)).thenReturn(user.getEmail());
         Mockito.when(jwtUtil.isTokenValid(TOKEN, user)).thenReturn(true);
@@ -78,6 +80,18 @@ public class AuthenticationSecuritySuccessTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void validate_fail() throws Exception {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(jwtAuthenticationFilter).build();
+        Mockito.when(jwtUtil.extractUsername(TOKEN)).thenCallRealMethod();
 
-
+        assertThrows(Exception.class,
+                ()->{
+                    mockMvc.perform(MockMvcRequestBuilders
+                                    .get("/api/v1/auth/validate")
+                                    .header("authorization", "Bearer " + TOKEN)
+                                    .contentType(MediaType.APPLICATION_JSON))
+                            .andExpect(status().is4xxClientError());
+                });
+    }
 }
