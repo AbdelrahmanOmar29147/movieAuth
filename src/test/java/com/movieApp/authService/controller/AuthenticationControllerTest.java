@@ -135,17 +135,15 @@ class AuthenticationControllerTest {
                 .readValue(getFileFromResource("authenticationRequestDTO.json"), AuthenticationRequestDTO.class);
         recaptchaResponse.setSuccess(false);
         createGoogleRecaptchaWireMock(request.getToken(), 200);
-
+        String mappedRequest = this.mapper.writeValueAsString(request);
         assertThrows(Exception.class,
                 ()->{
                     mockMvc.perform(MockMvcRequestBuilders
                                     .post("/api/v1/auth/authenticate")
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .accept(MediaType.APPLICATION_JSON)
-                                    .content(this.mapper.writeValueAsString(request))
-                            )
-                            .andExpect(status().is4xxClientError())
-                            .andExpect(jsonPath("$").doesNotExist());
+                                    .content(mappedRequest)
+                            );
                 });
     }
 
@@ -154,16 +152,14 @@ class AuthenticationControllerTest {
         RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
         recaptchaResponse.setSuccess(false);
         createGoogleRecaptchaWireMock(request.getToken(), 200);
-
+        String mappedRequest = this.mapper.writeValueAsString(request);
         assertThrows(Exception.class,
                 ()->{
                     mockMvc.perform(MockMvcRequestBuilders
                                     .post("/api/v1/auth/register")
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .accept(MediaType.APPLICATION_JSON)
-                                    .content(this.mapper.writeValueAsString(request)))
-                            .andExpect(status().is4xxClientError())
-                            .andExpect(jsonPath("$").doesNotExist());
+                                    .content(mappedRequest));
                 });
     }
 
@@ -172,17 +168,14 @@ class AuthenticationControllerTest {
         RegisterRequestDTO request = mapper.readValue(getFileFromResource("registerRequestDTO.json"), RegisterRequestDTO.class);
         recaptchaResponse.setSuccess(false);
         createGoogleRecaptchaWireMock(request.getToken(), 403);
-
-
+        String mappedRequest = this.mapper.writeValueAsString(request);
         assertThrows(Exception.class,
                 ()->{
                     mockMvc.perform(MockMvcRequestBuilders
                                     .post("/api/v1/auth/register")
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .accept(MediaType.APPLICATION_JSON)
-                                    .content(this.mapper.writeValueAsString(request)))
-                            .andExpect(status().is4xxClientError())
-                            .andExpect(jsonPath("$").doesNotExist());
+                                    .content(mappedRequest));
                 });
     }
 }

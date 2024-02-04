@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest()
-public class AuthenticationSecuritySuccessTest {
+class AuthenticationSecuritySuccessTest {
     private MockMvc mockMvc;
     private User user;
     private String TOKEN;
@@ -90,8 +90,7 @@ public class AuthenticationSecuritySuccessTest {
                     mockMvc.perform(MockMvcRequestBuilders
                                     .get("/api/v1/auth/validate")
                                     .header("authorization", "Bearer " + TOKEN)
-                                    .contentType(MediaType.APPLICATION_JSON))
-                            .andExpect(status().is4xxClientError());
+                                    .contentType(MediaType.APPLICATION_JSON));
                 });
     }
 }

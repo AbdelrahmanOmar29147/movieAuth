@@ -11,6 +11,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @SpringBootTest
 class JwtUtilTest {
 
@@ -38,13 +41,13 @@ class JwtUtilTest {
     @Test
     void isTokenValid_success() throws IOException {
         Boolean isValid = jwtUtil.isTokenValid(token, user);
-        assert(isValid.equals(true));
+        assertTrue(isValid);
     }
 
     @Test
-    void extractUsername() {
+    void extractUsername_success() {
         String username = jwtUtil.extractUsername(token);
-        assert(Objects.equals(username, user.getEmail()));
+        assertEquals(username, user.getEmail());
     }
 
 }
